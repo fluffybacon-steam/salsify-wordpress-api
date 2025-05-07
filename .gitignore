@@ -1,0 +1,9 @@
+.env
+cronlog.txt
+api.log
+errors.log
+old_pilgrimsfoodservice.py
+plugin.php*
+product.json
+salsify.json
+__pycache__
