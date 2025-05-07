@@ -70,8 +70,6 @@ def fetchProducts_fromSalsifyList(list_id):
     sal_conn = http.client.HTTPSConnection('app.salsify.com')
     sal_conn.request("GET", f'/api/v1/orgs/{org_id}/products/?filter=%3Dlist%3A{list_id}', headers=salsify_headers)
     response = sal_conn.getresponse()
-    print(response)
-    quit
     if response.status != 200:
         raise Exception(f"Fetch Salisfy products from list failed: {response.status}")
     data = json.loads(response.read())
