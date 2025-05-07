@@ -285,6 +285,9 @@ async def updateProductData(wp_prod, data, session, site_env):
             new_post['title'] = data.get("Regulated Product Name").title()
         elif data.get("PRODUCT NAME"):
             new_post['title'] = data.get("PRODUCT NAME").title()
+    else:
+        # mandatory field
+        new_post['title'] = wp_prod.get('title').get('rendered')
     
     # Post Copy
     if 'Copy' in config.salsify_fields:

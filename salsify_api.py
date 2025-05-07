@@ -34,15 +34,16 @@ logging.basicConfig(level=logging.DEBUG, handlers=[all_handler, error_handler])
 
 # Args setup
 parser=argparse.ArgumentParser(
-    description='''Salsify to Wordpress API. Pulls product data from Salsify and imports it to its respective Wordpress product. Assumes your site already has a custom post type Product.''',
+    description='''Salsify to Wordpress API. Pulls product data from Salsify and imports it to its respective Wordpress product. Assumes your site already has a custom post type Product and site supports using Application Passwords for auth''',
     epilog="""Developed by @fluffybacon-steam""")
 parser.add_argument('--site', type=str, help='Define environment on which to run (required). Defaults to live env but any site url can be passed through')
+parser.add_argument('--site-type', type=str)
 parser.add_argument('--force', action='store_true', help='Force synchronization; disregards salsify_updated_last check')
 parser.add_argument('--single', type=str, help='Resync a singular product using wordpress post id')
 parser.add_argument('--ignore-list', action='store_true', help='Ignores white/black list from wordpress (old)|')
 args=parser.parse_args()
 
-if 'just' in args.site:
+if 'just' in args.site or 'justbare' == args.site_type:
     config.user = 'robo'
     if args.site == 'justbare':
         config.base_url = 'justbarefoods.com'
@@ -50,7 +51,7 @@ if 'just' in args.site:
         config.base_url = args.site.replace("http://",'').replace("https://",'')
     config.app_password = os.getenv('JUST_BARE_AP')
     config.filter = "='Brand Name':{'Just Bare','Just Bare Brand'}"
-elif 'pilgrims' in args.site:
+elif 'pilgrims' in args.site or 'pilgrims' == args.site_type:
     config.user = 'robot'
     if args.site == 'pilgrims':
         config.base_url = 'pilgrimsusa.com'
@@ -58,10 +59,13 @@ elif 'pilgrims' in args.site:
         config.base_url = args.site.replace("http://",'').replace("https://",'')
     config.app_password = os.getenv('PILGRIMS_AP')
     config.filter = "='Brand Name':{'Pilgrim\'s'}"
-else:
-    print("Need --site")
+elif args.site:
+    print("Need --site and/or --site-type")
     quit()
-    
+
+# print(config.user)
+# print(config.app_password)
+
 config.auth_token = base64.b64encode(f"{config.user}:{config.app_password}".encode()).decode()
 org_id = os.getenv('ORG_ID')
 salsify_headers = {'Authorization': os.getenv('SALSIFY_AUTH')}
@@ -105,14 +109,14 @@ async def fetchProducts_fromWordpress(lists, single_post_id=None):
         conn = http.client.HTTPConnection(config.base_url)
     else:
         conn = http.client.HTTPSConnection(config.base_url)
-    headers = {
-        'Authorization': f'Basic {config.auth_token}'
-    }
+    # headers = {
+    #     'Authorization': f'Basic {config.auth_token}'
+    # }
     try: 
         async with aiohttp.ClientSession() as session:
             if single_post_id is not None:
                 params = f'/{single_post_id}?_fields={fields}'
-                conn.request("GET", f"/wp-json/wp/v2/product{params}", headers=headers)
+                conn.request("GET", f"/wp-json/wp/v2/product{params}")
                 response = conn.getresponse()
                 if response.status == 200:
                     data = response.read()
@@ -120,7 +124,7 @@ async def fetchProducts_fromWordpress(lists, single_post_id=None):
             else :
                 while page >= 1:
                     params = f'?page={page}&per_page={per_page}&_fields={fields}'
-                    conn.request("GET", f"/wp-json/wp/v2/product{params}", headers=headers)
+                    conn.request("GET", f"/wp-json/wp/v2/product{params}")
                     logging.info('Requesting page #%s : %s', page, f"/wp-json/wp/v2/product{params}")
                     response = conn.getresponse()
                     logging.info(response.status)
@@ -255,8 +259,7 @@ async def updateWordPressProduct(post_id, data, session):
         url = url_base
         data['title'] = 'new salsify product'
         data['status'] = 'draft'
-        data['meta'] = {'salsify_last_updated_time_stamp' : ''}
-
+        data['meta'] = {'salsify_last_updated_time_stamp' : ''} 
     async with session.post(url, headers=headers, json=data) as response:
         status = response.status
         body = await response.text()
@@ -267,15 +270,17 @@ async def updateWordPressProduct(post_id, data, session):
             logging.info("Product post created successfully")
         else:
             logging.error(f"Failed to update product post. Status code: {status}, Reason: {response.reason}")
+            logging.error(url_base)
+            logging.error(headers)
+            logging.error(data)
             logging.error(body)
             return None
         try:
             return await response.json()
         except Exception as e:
             logging.error("Failed to parse post response: %s", e)
-            return None
 
-            # # fallback: attempt partial updates one field at a time
+            # fallback: attempt partial updates one field at a time
             # for point, value in data.items():
             #     await asyncio.sleep(1)
             #     payload = {}
@@ -391,10 +396,10 @@ def fetchLists():
     '''
     try:
         wp_conn = http.client.HTTPSConnection(config.base_url)
-        headers = {
-            'Authorization': f'Basic {config.auth_token}',
-        }
-        wp_conn.request("GET", '/wp-json/custom/v1/salsify-lists/', headers=headers)
+        # headers = {
+        #     'Authorization': f'Basic {config.auth_token}',
+        # }
+        wp_conn.request("GET", '/wp-json/custom/v1/salsify-lists/')
         response = wp_conn.getresponse()
         if response.status != 200:
             raise Exception(f"List fetch failed: {response.status}")
