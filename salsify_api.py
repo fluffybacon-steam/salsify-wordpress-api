@@ -54,7 +54,7 @@ if 'just' in args.site or 'justbare' == args.site_type:
 elif 'pilgrims' in args.site or 'pilgrims' == args.site_type:
     config.user = 'robot'
     if args.site == 'pilgrims':
-        config.base_url = 'pilgrimsusa.com'
+        config.base_url = 'www.pilgrimsusa.com'
     else: 
         config.base_url = args.site.replace("http://",'').replace("https://",'')
     config.app_password = os.getenv('PILGRIMS_AP')
@@ -156,7 +156,7 @@ async def fetchProducts_fromWordpress(lists, single_post_id=None):
                         else:
                             page = 0
                     else:
-                        logging.error(f"Failed to fetch data. Status code: {response.status}")
+                        logging.error(f"fetchProducts_fromWordpress: Failed to fetch data after {page} pages. Status code: {response.status}")
                         break
 
                 conn.close()
@@ -228,7 +228,7 @@ async def synchronize_with_Salsify(wp_prods):
             elif wp_prod.get('meta') and wp_prod['meta'].get('salsify_last_updated_time_stamp') != salsify_data.get('salsify:updated_at'):
                 tasks.append(updateProductData(wp_prod, salsify_data, session, args.site))
             else:
-                logging.error("Failed to sync %s",wp_prod)
+                logging.info("No sync for %s",wp_prod)
 
         new_post_data = await asyncio.gather(*tasks)
         for new_post in new_post_data:
@@ -392,15 +392,20 @@ def fetchLists():
     '''
     Fetch white and blacklists for Salsify API from WordPress site
     ### returns [ 'sku_list' , 'gtin_list', 'sku_blacklist', 'gtin_blacklist' ] keyed
-    
     '''
     try:
         wp_conn = http.client.HTTPSConnection(config.base_url)
-        # headers = {
-        #     'Authorization': f'Basic {config.auth_token}',
-        # }
         wp_conn.request("GET", '/wp-json/custom/v1/salsify-lists/')
         response = wp_conn.getresponse()
+        # print(f"Response Status: {response.status}")
+        # print(f"Response Headers: {response.getheaders()}")
+        
+        # if response.status == 301:
+        #     location = response.getheader('Location')
+        #     wp_conn = http.client.HTTPConnection(location)
+        #     wp_conn.request("GET", '/wp-json/custom/v1/salsify-lists/')
+        #     response = wp_conn.getresponse()
+        
         if response.status != 200:
             raise Exception(f"List fetch failed: {response.status}")
         return json.loads(response.read())
