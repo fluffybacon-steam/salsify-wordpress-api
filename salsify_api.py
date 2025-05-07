@@ -36,7 +36,7 @@ logging.basicConfig(level=logging.DEBUG, handlers=[all_handler, error_handler])
 parser=argparse.ArgumentParser(
     description='''Salsify to Wordpress API. Pulls product data from Salsify and imports it to its respective Wordpress product. Assumes your site already has a custom post type Product.''',
     epilog="""Developed by @fluffybacon-steam""")
-parser.add_argument('--site', type=str, help='Define environment on which to run (required).')
+parser.add_argument('--site', type=str, help='Define environment on which to run (required). Defaults to live env but any site url can be passed through')
 parser.add_argument('--force', action='store_true', help='Force synchronization; disregards salsify_updated_last check')
 parser.add_argument('--single', type=str, help='Resync a singular product using wordpress post id')
 parser.add_argument('--ignore-list', action='store_true', help='Ignores white/black list from wordpress (old)|')
@@ -47,7 +47,7 @@ if 'just' in args.site:
     if args.site == 'justbare':
         config.base_url = 'justbarefoods.com'
     else: 
-        config.base_url = args.site
+        config.base_url = args.site.replace("http://",'').replace("https://",'')
     config.app_password = os.getenv('JUST_BARE_AP')
     config.filter = "='Brand Name':{'Just Bare','Just Bare Brand'}"
 elif 'pilgrims' in args.site:
@@ -55,7 +55,7 @@ elif 'pilgrims' in args.site:
     if args.site == 'pilgrims':
         config.base_url = 'pilgrimsusa.com'
     else: 
-        config.base_url = args.site
+        config.base_url = args.site.replace("http://",'').replace("https://",'')
     config.app_password = os.getenv('PILGRIMS_AP')
     config.filter = "='Brand Name':{'Pilgrim\'s'}"
 else:
@@ -70,6 +70,8 @@ def fetchProducts_fromSalsifyList(list_id):
     sal_conn = http.client.HTTPSConnection('app.salsify.com')
     sal_conn.request("GET", f'/api/v1/orgs/{org_id}/products/?filter=%3Dlist%3A{list_id}', headers=salsify_headers)
     response = sal_conn.getresponse()
+    print(response)
+    quit
     if response.status != 200:
         raise Exception(f"Fetch Salisfy products from list failed: {response.status}")
     data = json.loads(response.read())
@@ -401,6 +403,7 @@ def fetchLists():
         return json.loads(response.read())
     except Exception as e:
         logging.error(f"Failed to fetch lists from WordPress: {e}")
+        logging.error(f"  {config.base_url}")
         sys.exit(1)
 
 async def main(lists = None):

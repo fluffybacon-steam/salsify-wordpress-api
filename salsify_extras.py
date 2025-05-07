@@ -279,12 +279,12 @@ async def updateProductData(wp_prod, data, session, site_env):
     
     # Post Title
     if 'Title' in config.salsify_fields:
-        if data.get("PRODUCT NAME"):
-            new_post['title'] = data.get("PRODUCT NAME").title()
-        elif(data.get("Functional Name")):
+        if(data.get("Functional Name")):
             new_post['title'] = data.get("Functional Name").title()
         elif(data.get("Regulated Product Name")):
             new_post['title'] = data.get("Regulated Product Name").title()
+        elif data.get("PRODUCT NAME"):
+            new_post['title'] = data.get("PRODUCT NAME").title()
     
     # Post Copy
     if 'Copy' in config.salsify_fields:
@@ -320,34 +320,47 @@ async def updateProductData(wp_prod, data, session, site_env):
     
     # Benefits + Disclaimers
     if 'Benefits' in config.salsify_fields:
-        # Add check for Bullet 1 - Computed, etc
-        if data.get('Feature Benefits'):
+
+        benefits_list = {}
+        if "Bullet 1 - Computed": 
+            benefits_list.append(data.get('Bullet 1 - Computed'))
+        if "Bullet 2 - Computed": 
+            benefits_list.append(data.get('Bullet 2 - Computed'))
+        if "Bullet 3 - Computed": 
+            benefits_list.append(data.get('Bullet 3 - Computed'))
+        if "Bullet 4 - Computed": 
+            benefits_list.append(data.get('Bullet 4 - Computed'))
+        if "Bullet 5 - Computed": 
+            benefits_list.append(data.get('Bullet 5 - Computed'))
+        #Fallback
+        if len(benefits_list) == 0 and data.get('Feature Benefits'):
             benefits_list = data.get('Feature Benefits').split(";")
-            html_output = "<ul>\n"
-            for benefit in benefits_list:
-                html_output += f"  <li>{benefit}</li>\n"
-            html_output += "</ul>"
-            temp_callouts = html_output
-            
-            ### cleanup 
-            temp_disclaimers = "<ul>"
-            if "antibiotics" in temp_callouts.lower():
-                temp_callouts = re.sub(r'\bAntibiotics\b', 'Antibiotics*', temp_callouts, flags=re.IGNORECASE)
-                temp_disclaimers += "<li>* Chicken used is raised with no antibiotics ever.</li>"
 
-            if "steroids" in temp_callouts.lower():
-                temp_callouts = re.sub(r'\bSteroids\b', 'Steroids†', temp_callouts, flags=re.IGNORECASE)
-                temp_disclaimers += "<li>† Federal regulations prohibit the use of hormones or steroids in poultry.</li>"
-
-            if "family farms" in temp_callouts.lower():
-                temp_callouts = re.sub(r'\bfamily farms\b', 'Family Farms‡', temp_callouts, flags=re.IGNORECASE)
-                temp_disclaimers += "<li>‡ “Family farm or ranch” is any farm or ranch organized as a sole proprietorship, partnership, or family corporation where the majority of the business is owned and controlled by the person and his or her relatives.</li>"
-
-            if temp_disclaimers:
-                temp_disclaimers = "<ul>" + temp_disclaimers + "</ul>"
+        html_output = "<ul>\n"
+        for benefit in benefits_list:
+            html_output += f"  <li>{benefit}</li>\n"
+        html_output += "</ul>"
+        temp_callouts = html_output
         
-            acf['callouts'] = temp_callouts
-            acf['disclaimers'] = temp_disclaimers
+        ### cleanup 
+        temp_disclaimers = "<ul>"
+        if "antibiotics" in temp_callouts.lower():
+            temp_callouts = re.sub(r'\bAntibiotics\b', 'Antibiotics*', temp_callouts, flags=re.IGNORECASE)
+            temp_disclaimers += "<li>* Chicken used is raised with no antibiotics ever.</li>"
+
+        if "steroids" in temp_callouts.lower():
+            temp_callouts = re.sub(r'\bSteroids\b', 'Steroids†', temp_callouts, flags=re.IGNORECASE)
+            temp_disclaimers += "<li>† Federal regulations prohibit the use of hormones or steroids in poultry.</li>"
+
+        if "family farms" in temp_callouts.lower():
+            temp_callouts = re.sub(r'\bfamily farms\b', 'Family Farms‡', temp_callouts, flags=re.IGNORECASE)
+            temp_disclaimers += "<li>‡ “Family farm or ranch” is any farm or ranch organized as a sole proprietorship, partnership, or family corporation where the majority of the business is owned and controlled by the person and his or her relatives.</li>"
+
+        if temp_disclaimers:
+            temp_disclaimers = "<ul>" + temp_disclaimers + "</ul>"
+    
+        acf['callouts'] = temp_callouts
+        acf['disclaimers'] = temp_disclaimers
         
     # Ingredients
     if 'Ingredients' in config.salsify_fields:
