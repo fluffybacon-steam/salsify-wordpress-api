@@ -16,42 +16,42 @@ gallery_keys = {
 }
 
 
-def add_GTIN_to_WP_products(wordpress_prods,salisfy_prods):
-    '''
-    Assigns GTINs to Wordpress products
-    ### returns None
+# def add_GTIN_to_WP_products(wordpress_prods,salisfy_prods):
+#     '''
+#     Assigns GTINs to Wordpress products
+#     ### returns None
     
-    '''
-    logging.info('Salsify products: %s', len(salisfy_prods))
-    logging.info('WP products: %s', len(wordpress_prods))
-    for wp_prod in wordpress_prods[:]:
-        # Ucomment to test a single post
-        # if wp_id == 4365:
-        logging.info('found target')
-        wp_sku = wp_prod['acf'].get('product_sku') if not wp_prod['acf'].get('product_baz_id') else None
-        wp_id = wp_prod.get('id')
-        logging.info('sku: %s', wp_sku)
-        for sal_prod in salisfy_prods[:]:
-            sal_sku = str(sal_prod.get('SKU'))
-            logging.info('salisfy sku: %s', sal_sku)
-            if sal_sku and sal_sku == wp_sku:
-                logging.info('matched!')
-                # logging.info('Found salsify product')         
-                gtin = sal_prod.get('GTIN')
-                logging.info('WP beofre products: %s', len(wordpress_prods))
-                salisfy_prods.remove(sal_prod)
-                wordpress_prods.remove(wp_prod)
-                logging.info('WP rem products: %s', len(wordpress_prods))
-                if gtin:
-                    wp_prod['acf']['product_gtin'] = gtin
-                    status = updateProduct(wp_id,wp_prod)
-                    logging.info('Update status: %s', status)
-                    break  # Stop checking other salsify_prods once matched
-        # logging.info('!!! Couldnt find salsify product')     
-    logging.info('Left over Salsify products: %s', len(salisfy_prods))
-    logging.info('Left over WP products: %s', len(wordpress_prods))
-    for wp_prod in wordpress_prods:
-        logging.info('Left over WP products: %s',  wp_prod['title'])
+#     '''
+#     logging.info('Salsify products: %s', len(salisfy_prods))
+#     logging.info('WP products: %s', len(wordpress_prods))
+#     for wp_prod in wordpress_prods[:]:
+#         # Ucomment to test a single post
+#         # if wp_id == 4365:
+#         logging.info('found target')
+#         wp_sku = wp_prod['acf'].get('product_sku') if not wp_prod['acf'].get('product_baz_id') else None
+#         wp_id = wp_prod.get('id')
+#         logging.info('sku: %s', wp_sku)
+#         for sal_prod in salisfy_prods[:]:
+#             sal_sku = str(sal_prod.get('SKU'))
+#             logging.info('salisfy sku: %s', sal_sku)
+#             if sal_sku and sal_sku == wp_sku:
+#                 logging.info('matched!')
+#                 # logging.info('Found salsify product')         
+#                 gtin = sal_prod.get('GTIN')
+#                 logging.info('WP beofre products: %s', len(wordpress_prods))
+#                 salisfy_prods.remove(sal_prod)
+#                 wordpress_prods.remove(wp_prod)
+#                 logging.info('WP rem products: %s', len(wordpress_prods))
+#                 if gtin:
+#                     wp_prod['acf']['product_gtin'] = gtin
+#                     status = updateProduct(wp_id,wp_prod)
+#                     logging.info('Update status: %s', status)
+#                     break  # Stop checking other salsify_prods once matched
+#         # logging.info('!!! Couldnt find salsify product')     
+#     logging.info('Left over Salsify products: %s', len(salisfy_prods))
+#     logging.info('Left over WP products: %s', len(wordpress_prods))
+#     for wp_prod in wordpress_prods:
+#         logging.info('Left over WP products: %s',  wp_prod['title'])
 
 async def uploadImageToWordpress(image_data, post_id, session):
     if image_data['salsify:asset_resource_type'] != 'image':
